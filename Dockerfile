@@ -15,7 +15,6 @@ ENV CMAKE_BUILD_PARALLEL_LEVEL=8
 
 # create notebooks dir
 RUN mkdir -p /notebooks
-RUN mkdir -p mkdir -p /notebooks/my-runpod-volume/models/{checkpoints,vae,text-encoder,gfpgan,embeddings,hypernetwork,esrgan,clip,controlnet,loras}
 
 # Install Python, git and other necessary tools
 RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
@@ -50,7 +49,7 @@ RUN pip install --no-cache-dir torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.
 RUN pip install --no-cache-dir xformers==0.0.28.post1 --index-url https://download.pytorch.org/whl/cu124
 
 # Install notebooks requirements
-RUN pip install --no-cache-dir comfy-cli jupyterlab jupyter-archive nbformat \
+RUN pip install --no-cache-dir jupyterlab jupyter-archive nbformat \
     jupyterlab-git ipywidgets ipykernel ipython pickleshare \
     requests python-dotenv nvitop gdown && \
     pip cache purge
@@ -65,7 +64,7 @@ RUN pip install --no-cache-dir -r https://raw.githubusercontent.com/lllyasviel/s
 # Git Clone 
 RUN git clone https://github.com/lllyasviel/stable-diffusion-webui-forge.git
 
-EXPOSE 8188 8888
+EXPOSE 3001 7860 8888
 CMD ["jupyter", "lab", "--allow-root", "--ip=0.0.0.0", "--no-browser", \
     "--ServerApp.trust_xheaders=True", "--ServerApp.disable_check_xsrf=False", \
     "--ServerApp.allow_remote_access=True", "--ServerApp.allow_origin='*'", \
