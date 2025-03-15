@@ -52,7 +52,7 @@ make_directory() {
 }
 
 run_custom_script() {
-    curl https://raw.githubusercontent.com/vjumpkung/vjump-runpod-notebooks-and-script/refs/heads/$BRANCH_ID/custom_script.sh -sSf | bash -s -- -y
+    curl https://raw.githubusercontent.com/vjumpkung/vjump-runpod-notebooks-and-script/refs/heads/$BRANCH_ID/webui-forge/custom_scripts_forge.sh -sSf | bash -s -- -y
 }
 
 echo "Pod Started"
