@@ -57,6 +57,8 @@ RUN pip install --no-cache-dir comfy-cli jupyterlab jupyter-archive nbformat \
 
 WORKDIR /notebooks/
 
+COPY . .
+
 # Install WebUI Forge Dependencies
 RUN pip install --no-cache-dir -r https://raw.githubusercontent.com/lllyasviel/stable-diffusion-webui-forge/refs/heads/main/requirements_versions.txt
 
