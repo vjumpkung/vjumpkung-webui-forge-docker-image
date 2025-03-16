@@ -1,6 +1,7 @@
 from ui.main import download
 import requests
 import argparse
+import sys
 
 
 def get_model_list(url: str):
@@ -23,8 +24,7 @@ def main(args):
             print("no download url provided")
             return
     except:
-        print("no download url provided")
-        return
+        sys.exit(1)
 
 
 if __name__ == "__main__":
