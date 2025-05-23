@@ -8,7 +8,7 @@ dotenv.load_dotenv(override=True)
 
 platform_id = "OTHER"
 
-OUTPUT_PATH = os.getenv("OUTPUT_PATH") or "./output_images"
+OUTPUT_PATH = os.getenv("OUTPUT_PATH") or "./outputs"
 RESOURCE_PATH = os.getenv("RESOURCE_PATH") or "./my-runpod-volume/models"
 PROGRAM_PATH = os.getenv("PROGRAM_PATH") or "./stable-diffusion-webui-forge"
 
@@ -92,7 +92,7 @@ def auto_launch_forge():
         full_path = os.path.join(OUTPUT_PATH, subdir)
         os.makedirs(full_path, exist_ok=True)
 
-    command = "python -u launch.py --loglevel WARNING --disable-console-progressbars --disable-safe-unpickle --enable-insecure-extension-access --no-download-sd-model --no-hashing --api --xformers"
+    command = "python -u launch.py --loglevel WARNING --disable-console-progressbars --disable-safe-unpickle --enable-insecure-extension-access --no-download-sd-model --no-hashing --api --xformers --cuda-stream --cuda-malloc --disable-gpu-warning"
 
     for args, value in zip(argss, check_types):
         if value == "checkpoints":

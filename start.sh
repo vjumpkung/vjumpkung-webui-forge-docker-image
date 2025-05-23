@@ -11,7 +11,7 @@ export RESOURCE_PATH=${RESOURCE_PATH:-"/notebooks/my-runpod-volume/models"}
 export LOG_PATH=${LOG_PATH:-"/notebooks/backend.log"}
 export PROGRAM_LOG=${PROGRAM_LOG:-"/notebooks/forge.log"}
 export JUPYTER_LAB_PORT=${JUPYTER_LAB_PORT:-"8888"}
-export OUTPUT_PATH=${OUTPUT_PATH:-"/notebooks/output_images"}
+export OUTPUT_PATH=${OUTPUT_PATH:-"/notebooks/outputs"}
 
 start_nginx() {
     echo "Start NGINX"
