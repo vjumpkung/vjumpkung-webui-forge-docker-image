@@ -1,10 +1,44 @@
 #!/bin/bash
 export BRANCH_ID=${BRANCH_ID:-main}
 export PLATFORM_ID="RUNPOD"
+export TORCH_FORCE_WEIGHTS_ONLY_LOAD=1
+
+export PORT=8000
+export HOST="0.0.0.0"
+export UI_TYPE="FORGE"
+export PROGRAM_PATH=${PROGRAM_PATH:-"/notebooks/stable-diffusion-webui-forge/"}
+export RESOURCE_PATH=${RESOURCE_PATH:-"/notebooks/my-runpod-volume/models"}
+export LOG_PATH=${LOG_PATH:-"/notebooks/backend.log"}
+export PROGRAM_LOG=${PROGRAM_LOG:-"/notebooks/forge.log"}
+export JUPYTER_LAB_PORT=${JUPYTER_LAB_PORT:-"8888"}
+export OUTPUT_PATH=${OUTPUT_PATH:-"/notebooks/output_images"}
 
 start_nginx() {
     echo "Start NGINX"
     service nginx start
+}
+
+update_backend() {
+    cd /notebooks/program/vjumpkung-sd-ui-manager-backend/ && git pull --ff-only
+}
+
+start_backend() {
+    echo "Starting Resource Manager WebUI..."
+    cd /notebooks/program/vjumpkung-sd-ui-manager-backend && nohup python main.py &>$LOG_PATH &
+    echo "Resource Manager WebUI Started"
+}
+
+update_forge() {
+    echo "Updating WebUI Forge GUI"
+
+    cd $PROGRAM_PATH && git pull --ff-only
+
+    cd /notebooks/ && curl https://raw.githubusercontent.com/vjumpkung/vjump-runpod-notebooks-and-script/refs/heads/main/webui-forge/launch_webui_forge.ipynb >launch_webui_forge.ipynb
+    cd /notebooks/ && curl https://raw.githubusercontent.com/vjumpkung/vjump-runpod-notebooks-and-script/refs/heads/main/webui-forge/resource_manager.ipynb >resource_manager.ipynb
+    cd /notebooks/ && curl https://raw.githubusercontent.com/vjumpkung/vjump-runpod-notebooks-and-script/refs/heads/main/webui-forge/ui/main.py >./ui/main.py
+    cd /notebooks/ && curl https://raw.githubusercontent.com/vjumpkung/vjump-runpod-notebooks-and-script/refs/heads/main/webui-forge/ui/google_drive_download.py >./ui/google_drive_download.py
+
+    echo "Update Completed"
 }
 
 configure_dns() {
@@ -40,6 +74,12 @@ start_jupyter() {
     echo "Jupyter Lab started"
 }
 
+start_forge() {
+    echo "Starting WebUI Forge..."
+    cd /notebooks && nohup python autolaunch_forge.py >>$PROGRAM_LOG 2>&1 &
+    echo "WebUI Forge Started"
+}
+
 # Export env vars
 export_env_vars() {
     echo "Exporting environment variables..."
@@ -48,19 +88,20 @@ export_env_vars() {
 }
 
 make_directory() {
-    mkdir -p /notebooks/my-runpod-volume/models/{checkpoints,vae,text-encoder,gfpgan,embeddings,hypernetwork,esrgan,clip,controlnet,loras}
-}
-
-run_custom_script() {
-    curl https://raw.githubusercontent.com/vjumpkung/vjump-runpod-notebooks-and-script/refs/heads/$BRANCH_ID/webui-forge/custom_scripts_forge.sh -sSf | bash -s -- -y
+    echo "create directory at $RESOURCE_PATH and output path at $OUTPUT_PATH"
+    mkdir -p $RESOURCE_PATH/{checkpoints,vae,text-encoder,gfpgan,embeddings,hypernetwork,esrgan,clip,controlnet,loras}
+    mkdir -p $OUTPUT_PATH
 }
 
 echo "Pod Started"
 configure_dns
-start_nginx
-export_env_vars
 make_directory
-run_custom_script
+export_env_vars
+start_nginx
 start_jupyter
+update_backend
+update_forge
+start_backend
+start_forge
 echo "Start script(s) finished, pod is ready to use."
 sleep infinity

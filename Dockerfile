@@ -14,7 +14,7 @@ ENV PYTHONUNBUFFERED=1
 ENV CMAKE_BUILD_PARALLEL_LEVEL=8
 
 # create notebooks dir
-RUN mkdir -p /notebooks
+RUN mkdir -p /notebooks /notebooks/program/
 
 # Install Python, git and other necessary tools
 RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
@@ -35,6 +35,20 @@ RUN ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python && \
     curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
     python get-pip.py
 
+# add uv
+
+# The installer requires curl (and certificates) to download the release archive
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+
+# Download the latest installer
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+
+# Run the installer then remove it
+RUN sh /uv-installer.sh && rm /uv-installer.sh
+
+# Ensure the installed binary is on the `PATH`
+ENV PATH="/root/.local/bin/:$PATH"
+
 # Clean up to reduce image size
 RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
@@ -43,28 +57,34 @@ COPY src/forge_nginx_conf.conf /etc/nginx/sites-available/
 RUN ln -s /etc/nginx/sites-available/forge_nginx_conf.conf /etc/nginx/sites-enabled/
 
 # Install Torch
-RUN pip install --no-cache-dir torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu124
+RUN uv pip install --system torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu124
 
 # Install xformers
-RUN pip install --no-cache-dir xformers==0.0.28.post1 --index-url https://download.pytorch.org/whl/cu124
+RUN uv pip install --system xformers==0.0.28.post1 --index-url https://download.pytorch.org/whl/cu124
 
 # Install notebooks requirements
-RUN pip install --no-cache-dir jupyterlab jupyter-archive nbformat \
-    jupyterlab-git ipywidgets ipykernel ipython pickleshare \
+RUN uv pip install --system jupyterlab jupyter-archive nbformat \
+    jupyterlab-git ipywidgets ipykernel ipython pickleshare "aiofiles==24.1.0" "httpx==0.28.1" python-dotenv uvicorn "rich==14.0.0" fastapi websockets \
     requests python-dotenv nvitop gdown && \
     pip cache purge
+
+WORKDIR /notebooks/program/
+
+RUN git clone https://github.com/vjumpkung/vjumpkung-sd-ui-manager-backend.git
 
 WORKDIR /notebooks/
 
 COPY . .
 
 # Install WebUI Forge Dependencies
-RUN pip install --no-cache-dir -r https://raw.githubusercontent.com/lllyasviel/stable-diffusion-webui-forge/refs/heads/main/requirements_versions.txt
+RUN uv pip install --system -r https://raw.githubusercontent.com/lllyasviel/stable-diffusion-webui-forge/refs/heads/main/requirements_versions.txt
+
+RUN uv cache clean
 
 # Git Clone 
 RUN git clone https://github.com/lllyasviel/stable-diffusion-webui-forge.git
 
-EXPOSE 3001 7860 8888
+EXPOSE 3001 7860 8888 8000
 CMD ["jupyter", "lab", "--allow-root", "--ip=0.0.0.0", "--no-browser", \
     "--ServerApp.trust_xheaders=True", "--ServerApp.disable_check_xsrf=False", \
     "--ServerApp.allow_remote_access=True", "--ServerApp.allow_origin='*'", \
