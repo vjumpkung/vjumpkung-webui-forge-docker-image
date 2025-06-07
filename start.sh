@@ -13,6 +13,8 @@ export PROGRAM_LOG=${PROGRAM_LOG:-"/notebooks/forge.log"}
 export JUPYTER_LAB_PORT=${JUPYTER_LAB_PORT:-"8888"}
 export OUTPUT_PATH=${OUTPUT_PATH:-"/notebooks/outputs"}
 
+export CMD=${CMD:-"python autolaunch_forge.py"}
+
 start_nginx() {
     echo "Start NGINX"
     service nginx start
@@ -76,7 +78,8 @@ start_jupyter() {
 
 start_forge() {
     echo "Starting WebUI Forge..."
-    cd /notebooks && nohup python autolaunch_forge.py >>$PROGRAM_LOG 2>&1 &
+    # cd /notebooks && nohup python autolaunch_forge.py >>$PROGRAM_LOG 2>&1 &
+    /bin/bash /notebooks/start_process.sh
     echo "WebUI Forge Started"
 }
 
