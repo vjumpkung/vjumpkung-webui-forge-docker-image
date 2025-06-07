@@ -1,7 +1,8 @@
 #!/bin/bash
 export BRANCH_ID=${BRANCH_ID:-main}
 export PLATFORM_ID="RUNPOD"
-export TORCH_FORCE_WEIGHTS_ONLY_LOAD=1
+export TORCH_FORCE_WEIGHTS_ONLY_LOAD=0
+export PYTORCH_ENABLE_UNSAFE_LOAD=1
 
 export PORT=8000
 export HOST="0.0.0.0"
@@ -14,6 +15,8 @@ export JUPYTER_LAB_PORT=${JUPYTER_LAB_PORT:-"8888"}
 export OUTPUT_PATH=${OUTPUT_PATH:-"/notebooks/outputs"}
 
 export CMD=${CMD:-"python autolaunch_forge.py"}
+
+
 
 start_nginx() {
     echo "Start NGINX"
