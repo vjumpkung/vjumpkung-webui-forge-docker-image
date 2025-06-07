@@ -3,6 +3,8 @@ import os
 import json
 import subprocess
 import shlex
+import signal
+import sys
 
 dotenv.load_dotenv(override=True)
 
@@ -66,6 +68,33 @@ patch_output_directory = {
     "outdir_init_images": "/notebooks/outputs/init-images",
 }
 
+# Global variable to store the subprocess
+forge_process = None
+
+
+def signal_handler(signum, frame):
+    """Handle termination signals and clean up subprocess"""
+    print(f"Received signal {signum}. Cleaning up...")
+    cleanup_and_exit()
+
+
+def cleanup_and_exit():
+    """Terminate the subprocess and exit"""
+    global forge_process
+    if forge_process:
+        print("Terminating Forge process...")
+        try:
+            # Try graceful termination first
+            forge_process.terminate()
+            forge_process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            print("Graceful termination failed, forcing kill...")
+            forge_process.kill()
+            forge_process.wait()
+        except Exception as e:
+            print(f"Error during cleanup: {e}")
+    sys.exit(0)
+
 
 def is_posix():
     try:
@@ -77,6 +106,11 @@ def is_posix():
 
 
 def auto_launch_forge():
+    global forge_process
+
+    # Set up signal handlers
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
 
     # Define subdirectories
     subdirs = [
@@ -133,23 +167,37 @@ def auto_launch_forge():
     with open(config_file, "w") as fp:
         json.dump(load_config, fp, indent=4)
 
-    # Start the subprocess with unbuffered output
-    process = subprocess.Popen(
-        shlex.split(command, posix=pos),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,  # Line buffering
-    )
+    try:
+        # Start the subprocess with unbuffered output
+        # Use process group to ensure child processes are also terminated
+        forge_process = subprocess.Popen(
+            shlex.split(command, posix=pos),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,  # Line buffering
+            preexec_fn=(
+                os.setsid if hasattr(os, "setsid") else None
+            ),  # Create new process group
+        )
 
-    print("WebUI Forge has been started")
-    print(proxy_url)
+        print("WebUI Forge has been started")
+        print(proxy_url)
 
-    for i in process.stdout:
-        print(i.strip())
+        # Read output from the subprocess
+        try:
+            for line in forge_process.stdout:
+                print(line.strip())
+        except KeyboardInterrupt:
+            print("Keyboard interrupt received")
+            cleanup_and_exit()
 
-    # Wait for the subprocess to complete
-    process.wait()
+        # Wait for the subprocess to complete
+        forge_process.wait()
+
+    except Exception as e:
+        print(f"Error starting Forge: {e}")
+        cleanup_and_exit()
 
 
 if __name__ == "__main__":
